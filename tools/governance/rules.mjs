@@ -1,21 +1,24 @@
-// Shared, environment-agnostic OneAZ governance logic — pure functions only,
-// no DOM APIs, no Node built-ins. Used by BOTH:
-//   - governance.js (browser, da.live plugin — soft, in-editor guidance)
-//   - validate-bot.mjs (Node, CI — hard gate, the authoritative check)
+// Shared OneAZ governance logic for the da.live plugin (governance.js).
 //
-// This exists specifically to close the risk called out in the architecture
-// doc §6.3: the plugin and the bot must resolve the same page path to the
-// same template using the same rules, or they'll silently drift apart.
-// One shared module, imported by both runtimes, is how that's enforced.
+// This validates against the DA SOURCE document — fetched live via the DA
+// Admin Source API (admin.da.live), the same way the DA editor itself reads
+// and writes — NOT the published/previewed aem.page/aem.live render. That
+// means no Preview, no Publish, and no manual page/plugin refresh: the panel
+// re-fetches source on focus/visibility change and reflects whatever the
+// author has actually saved, immediately (see governance.js's refresh()).
+//
+// Browser-only (uses DOMParser) by design — there is no longer a Node-side
+// consumer of this module (see oneaz-governance-architecture.md §0 for why
+// the earlier CI-bot approach was dropped in favor of this live model).
 
 export function normalizePath(path) {
   return (path || '/').replace(/\.html$/, '').replace(/\/$/, '') || '/';
 }
 
-// DA sheets: the EDS render pipeline collapses a single-sheet doc to
-// { total, offset, limit, data: [...] } — no ":names" wrapper survives to
-// the rendered JSON, even though the DA source is authored as a multi-sheet
-// envelope. Handle both shapes.
+// DA source sheets are a multi-sheet envelope:
+// { <sheetName>: { total, offset, limit, data: [...] }, ":names": [...], ":type": "multi-sheet" }
+// Handled defensively against a flat { data: [...] } shape too, in case a
+// sheet is ever read from a rendered (published) endpoint instead of source.
 export function sheetRows(json) {
   if (Array.isArray(json.data)) return json.data;
   const sheetName = json[':names']?.[0];
@@ -48,41 +51,51 @@ export function rulesForTemplate(templateId, rulesRows) {
   };
 }
 
-// Extract the ordered list of block names from rendered (pre-decoration)
-// EDS HTML — works identically in the browser and in Node, since it's pure
-// string scanning, not a DOM API. A block div is a direct child of a
-// section div, which is itself a direct child of <main>: depth 1 (from the
-// top of <main>'s content) is section divs, depth 2 is block divs — a
-// block's own class list (before client-side decoration adds ".block") is
-// exactly its block name as the first class token, optionally followed by
-// variant classes.
+// Sections are the direct <div> children of <main>.
+function sectionEls(doc) {
+  const main = doc.querySelector('main');
+  if (!main) return [];
+  return Array.from(main.children).filter((el) => el.tagName === 'DIV');
+}
+
+// A section's direct-child blocks come in two possible forms:
+//   - div form: <div class="name">...</div> — what da.live's ProseMirror
+//     layer saves once a real author edits/inserts through the editor.
+//     Mirrors tools/plugins/personalization/experience.js's blockEls() —
+//     same DA source document shape, same extraction rule.
+//   - table form: <table><tr><td>Name</td></tr>...</table> — the
+//     pre-normalization authoring form from da-content's rules, seen when
+//     content reaches DA source via bulk import or a direct Source API push
+//     rather than through the editor. The block name is the first row's
+//     first cell, lowercased.
+function tableBlockName(tableEl) {
+  const firstCell = tableEl.querySelector('tr td, tr th');
+  if (!firstCell) return null;
+  return firstCell.textContent.trim().split(/\s+/)[0]?.toLowerCase() || null;
+}
+
+// Ordered list of block names (first class token = block name; later tokens
+// are variants, ignored here) across every section on the page, in document
+// order — needed for min/max counts and first/last position checks.
 export function extractBlocks(html) {
-  const mainMatch = html.match(/<main[^>]*>([\s\S]*)<\/main>/i);
-  if (!mainMatch) return [];
-  const inner = mainMatch[1];
-  const tagRe = /<(\/?)div\b([^>]*)>/gi;
-  let depth = 0;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
   const blocks = [];
-  let m;
-  while ((m = tagRe.exec(inner)) !== null) {
-    const isClosing = m[1] === '/';
-    if (isClosing) {
-      depth -= 1;
-    } else {
-      depth += 1;
-      if (depth === 2) {
-        const classAttr = m[2].match(/class="([^"]*)"/);
-        const classes = classAttr ? classAttr[1].trim().split(/\s+/) : [];
-        if (classes[0]) blocks.push(classes[0]);
+  sectionEls(doc).forEach((section) => {
+    Array.from(section.children).forEach((child) => {
+      if (child.tagName === 'DIV' && child.classList.length > 0
+        && !child.classList.contains('section-metadata') && !child.classList.contains('metadata')) {
+        blocks.push(child.classList[0]);
+      } else if (child.tagName === 'TABLE') {
+        const name = tableBlockName(child);
+        if (name) blocks.push(name);
       }
-    }
-  }
+    });
+  });
   return blocks;
 }
 
-// The core check, shared by the plugin (advisory display) and the bot
-// (authoritative gate): given the ordered block list actually on a page and
-// a template's rules, what's wrong?
+// The core check: given the ordered block list actually on the page and a
+// template's rules, what's wrong?
 //
 // Violation shapes:
 //   { type: 'missing-mandatory',  block, expected, actual }
