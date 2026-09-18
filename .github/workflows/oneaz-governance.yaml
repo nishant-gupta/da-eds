@@ -1,0 +1,45 @@
+name: OneAZ Governance Validation
+
+# Phase 3 of the OneAZ governance rollout (see oneaz-governance-architecture.md).
+# The da.live plugin (tools/governance/governance.js) only offers in-editor
+# guidance — it can't stop an author from typing/pasting a disallowed block
+# by hand. This workflow re-checks the actually PUBLISHED pages against the
+# same sitemap-registry.json / template-rules.json DA sheets, using the same
+# shared tools/governance/rules.mjs, so it can't silently drift from what the
+# plugin shows.
+#
+# Report-only for now (no --fail-on-violation): per the architecture doc §5
+# Phase 3, this should prove its false-positive rate is near zero on real
+# governed pages before it's allowed to block anything. Flip that on once
+# it's earned trust.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * *' # daily, catches pages edited directly in DA without a code push
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run governance validation
+        # TODO(Phase 4): switch to --sitemap=/sitemap.xml once the real
+        # OneAZ site has one, instead of hand-listing paths here.
+        run: |
+          node tools/governance/validate-bot.mjs \
+            --base-url=https://main--da-eds--nishant-gupta.aem.live \
+            --paths=/de/startseite,/de/startseite/therapiegebiete/cvrm/diabetes,/fr/startseite/produkte/trixeo/uberblick,/it/startseite/therapiegebiete/onkologie/lungenkrebs \
+            --json=governance-report.json
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneaz-governance-report
+          path: governance-report.json

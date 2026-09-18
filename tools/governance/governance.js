@@ -19,56 +19,22 @@
 // Once published they're served like any other EDS sheet, at the site root —
 // same shape as this project's existing content/placeholders.json.
 //
+// Path resolution, rule shape, block extraction, and violation checks all
+// live in ./rules.mjs — shared with validate-bot.mjs (the Phase 3 CI check)
+// so the two can't silently drift onto different definitions of "valid".
+//
 // eslint-disable-next-line import/no-unresolved
 import DA_SDK from 'https://da.live/nx/utils/sdk.js';
+import {
+  normalizePath, sheetRows, resolveTemplate, rulesForTemplate, extractBlocks, validatePage,
+} from './rules.mjs';
 
 const EXAMPLES = ['hero', 'cards', 'accordion', 'quote', 'video']; // blocks with a bundled insert example
 
-function normalizePath(path) {
-  return (path || '/').replace(/\.html$/, '').replace(/\/$/, '') || '/';
-}
-
-// DA source docs are authored as a multi-sheet envelope, but the EDS render
-// pipeline (aem.page/aem.live) collapses a single-sheet doc down to the flat
-// shape at delivery: { total, offset, limit, data: [ {col: val, ...}, ... ],
-// ":type": "sheet" } — no ":names" wrapper survives. Handle both shapes:
-// the flat one (what these two configs actually serve as), and the
-// multi-sheet one defensively, in case one of these ever grows a second
-// named sheet. Every cell value is a flat primitive (string) — nested
-// objects aren't valid sheet cells (see architecture doc §4).
 async function loadSheet(origin, name) {
   const res = await fetch(`${origin}/${name}`);
   if (!res.ok) throw new Error(`${name} not found (${res.status})`);
-  const json = await res.json();
-  if (Array.isArray(json.data)) return json.data;
-  const sheetName = json[':names']?.[0];
-  return json[sheetName]?.data || [];
-}
-
-function resolveTemplate(path, registryRows) {
-  return registryRows.find((entry) => new RegExp(entry.pathPattern).test(path));
-}
-
-function templateLabel(templateId) {
-  return templateId.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-// Reassemble the flat template-rules sheet rows back into
-// { mandatory: [...], flexible: [...] } for one template id.
-function rulesForTemplate(templateId, rulesRows) {
-  const rows = rulesRows.filter((r) => r.template === templateId);
-  if (!rows.length) return null;
-  const toRule = (r) => ({
-    block: r.block,
-    position: r.position || undefined,
-    min: Number(r.min),
-    max: Number(r.max),
-  });
-  return {
-    label: templateLabel(templateId),
-    mandatory: rows.filter((r) => r.zone === 'mandatory').map(toRule),
-    flexible: rows.filter((r) => r.zone === 'flexible').map(toRule),
-  };
+  return sheetRows(await res.json());
 }
 
 // Best-effort read of what's already on the page. There's no SDK call for
@@ -76,25 +42,13 @@ function rulesForTemplate(templateId, rulesRows) {
 // published/previewed render. This can lag unsaved edits; treat counts as
 // advisory, not authoritative (the validation bot, not this panel, is the
 // authoritative check — see architecture doc §6.1/§6.2).
-//
-// A plain fetch() gets the pre-decoration server HTML, not what's in the
-// browser DOM after scripts.js runs — the ".block" class isn't added until
-// client-side decoration executes, which a fetch+DOMParser never triggers.
-// Pre-decoration, a block div's only class IS the block name, so read that.
-async function fetchExistingBlockCounts(origin, path) {
+async function fetchExistingBlocks(origin, path) {
   try {
     const res = await fetch(`${origin}${path}`);
-    if (!res.ok) return { counts: {}, known: false };
-    const html = await res.text();
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const counts = {};
-    doc.querySelectorAll('main > div > div[class]').forEach((block) => {
-      const name = block.classList[0];
-      if (name) counts[name] = (counts[name] || 0) + 1;
-    });
-    return { counts, known: true };
+    if (!res.ok) return { blocks: [], known: false };
+    return { blocks: extractBlocks(await res.text()), known: true };
   } catch {
-    return { counts: {}, known: false };
+    return { blocks: [], known: false };
   }
 }
 
@@ -147,6 +101,18 @@ function renderError(message) {
   return `<div class="gov-error">Governance rules unavailable: ${message}</div>`;
 }
 
+function renderDisallowed(disallowed) {
+  if (!disallowed.length) return '';
+  return `
+    <div class="gov-section">
+      <h4>⚠ Not approved for this template</h4>
+      <div class="gov-error">
+        Found on this page but not in any rule for this template: <strong>${disallowed.join(', ')}</strong>.
+        This won't block saving here — the validation bot will flag it as a hard violation on publish.
+      </div>
+    </div>`;
+}
+
 (async function init() {
   const app = document.getElementById('app');
   const { context, actions } = await DA_SDK;
@@ -179,7 +145,8 @@ function renderError(message) {
     return;
   }
 
-  const { counts, known } = await fetchExistingBlockCounts(origin, path);
+  const { blocks, known } = await fetchExistingBlocks(origin, path);
+  const { counts, disallowed } = validatePage(blocks, template);
   const allRules = [...template.mandatory, ...template.flexible];
 
   app.innerHTML = `
@@ -198,6 +165,8 @@ function renderError(message) {
         ${template.flexible.map((r) => renderRule(r, counts[r.block] || 0, known)).join('')}
       </ul>
     </div>
+
+    ${known ? renderDisallowed(disallowed) : ''}
 
     <div class="gov-section">
       <h4>Insert an approved block</h4>
