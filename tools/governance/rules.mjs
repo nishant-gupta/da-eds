@@ -58,6 +58,60 @@ function sectionEls(doc) {
   return Array.from(main.children).filter((el) => el.tagName === 'DIV');
 }
 
+// Converts a canonical div-form block element (the shape stored in DA source
+// and in content/library/blocks/*.html) into the table-form markup da.live's
+// own ProseMirror editor actually recognizes as a "block" node.
+//
+// This exists because of a real bug: the governance plugin's insertBlock()
+// used to send div-form library HTML straight through actions.sendHTML(),
+// and it silently lost all structure — only inline text/formatting survived,
+// exactly matching what happens when ProseMirror's generic schema parser
+// (proseDOMParser.fromSchema(...).parse(dom), the code sendHTML triggers —
+// confirmed against adobe/da-live's da-library.js) meets a div tree it has
+// no parseDOM rule for. da.live's OWN native block library hits the same
+// wall and works around it exactly this way — confirmed against
+// adobe/da-live's helpers/index.js: getBlockTableHtml() runs on every
+// library block before it's hits parseDom(), never the raw div. This is a
+// faithful port of that function, not a new invention.
+export function blockToTableHtml(block) {
+  const classes = block.className.split(' ').filter(Boolean);
+  const name = classes.shift();
+  const variants = classes.length ? classes.join(', ') : null;
+
+  const rows = [...block.children];
+  const maxCols = rows.reduce((cols, row) => (
+    row.children.length > cols ? row.children.length : cols), 0) || 1;
+
+  const table = document.createElement('table');
+  table.setAttribute('border', 1);
+
+  const headerRow = document.createElement('tr');
+  const th = document.createElement('td');
+  th.setAttribute('colspan', maxCols);
+  th.textContent = variants ? `${name} (${variants})` : name;
+  headerRow.append(th);
+  table.append(headerRow);
+
+  rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    const cells = [...row.children];
+    cells.forEach((col, i) => {
+      const td = document.createElement('td');
+      // Pad only the last cell so the row's total width equals maxCols —
+      // spanning every cell would make short rows wider than maxCols and
+      // force ProseMirror to insert empty cells elsewhere to stay rectangular.
+      if (cells.length < maxCols && i === cells.length - 1) {
+        td.setAttribute('colspan', maxCols - i);
+      }
+      td.innerHTML = col.innerHTML;
+      tr.append(td);
+    });
+    table.append(tr);
+  });
+
+  return table;
+}
+
 // A section's direct-child blocks come in two possible forms:
 //   - div form: <div class="name">...</div> — what da.live's ProseMirror
 //     layer saves once a real author edits/inserts through the editor.

@@ -36,7 +36,7 @@
 // eslint-disable-next-line import/no-unresolved
 import DA_SDK from 'https://da.live/nx/utils/sdk.js';
 import {
-  normalizePath, sheetRows, resolveTemplate, rulesForTemplate, extractBlocks, validatePage,
+  normalizePath, sheetRows, resolveTemplate, rulesForTemplate, extractBlocks, validatePage, blockToTableHtml,
 } from './rules.mjs';
 
 const DA_ADMIN = 'https://admin.da.live';
@@ -85,7 +85,11 @@ async function insertBlock(name) {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const blockEl = doc.querySelector(`main .${name}`);
     if (!blockEl) throw new Error(`no .${name} element found in its library example`);
-    state.sdk.actions.sendHTML(blockEl.outerHTML);
+    // sendHTML runs generic ProseMirror schema parsing, which only recognizes
+    // block content in table form — send the div straight through and every
+    // wrapper is silently dropped, keeping only inline text (see the note on
+    // blockToTableHtml in rules.mjs for how this was confirmed).
+    state.sdk.actions.sendHTML(blockToTableHtml(blockEl).outerHTML);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error(`OneAZ governance: could not insert "${name}" from the library`, err);
