@@ -22,7 +22,7 @@
 // eslint-disable-next-line import/no-unresolved
 import DA_SDK from 'https://da.live/nx/utils/sdk.js';
 
-const EXAMPLES = ['hero', 'cards', 'accordion']; // blocks with a bundled insert example
+const EXAMPLES = ['hero', 'cards', 'accordion', 'quote', 'video']; // blocks with a bundled insert example
 
 function normalizePath(path) {
   return (path || '/').replace(/\.html$/, '').replace(/\/$/, '') || '/';
