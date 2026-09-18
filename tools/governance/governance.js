@@ -40,7 +40,7 @@ import {
 } from './rules.mjs';
 
 const DA_ADMIN = 'https://admin.da.live';
-const POLL_MS = 2500;
+const POLL_MS = 1000;
 const EXAMPLES = ['hero', 'cards', 'accordion', 'quote', 'video']; // blocks with a bundled insert example
 
 const state = {
@@ -185,7 +185,7 @@ let refreshing = false;
 // focus/visibility change (for lower latency when attention returns here).
 //
 // A transient fetch error keeps the current view intact rather than blanking
-// the panel — with a 2.5s poll, a single flaky request is normal, not a real
+// the panel — with a 1s poll, a single flaky request is normal, not a real
 // failure, and shouldn't be disruptive. Only the very first load shows an
 // error state, since there's no "current view" yet to fall back to.
 async function refresh() {
