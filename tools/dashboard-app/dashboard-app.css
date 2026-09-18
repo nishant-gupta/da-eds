@@ -1,0 +1,149 @@
+body {
+  font-family: 'Adobe Clean', 'adobe-clean', -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+  color: #1b1b1b;
+  background: #f4f4f4;
+}
+
+.dash-header {
+  background: #1b1b1b;
+  color: #fff;
+  padding: 20px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.dash-header h1 {
+  font-size: 18px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.dash-header .meta {
+  color: #aaa;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.dash-rescan {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #1473e6;
+  color: #fff;
+  cursor: pointer;
+}
+
+.dash-rescan:disabled {
+  background: #6e6e6e;
+  cursor: not-allowed;
+}
+
+.dash-content {
+  padding: 20px 28px 40px;
+}
+
+.dash-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.dash-stat {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-width: 110px;
+}
+
+.dash-stat .n {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.dash-stat .l {
+  font-size: 11px;
+  color: #6e6e6e;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-top: 2px;
+}
+
+.dash-progress {
+  font-size: 12px;
+  color: #6e6e6e;
+  margin-bottom: 12px;
+}
+
+table.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+table.dash-table th {
+  background: #1b1b1b;
+  color: #fff;
+  text-align: left;
+  padding: 9px 14px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+table.dash-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 13px;
+  vertical-align: top;
+}
+
+table.dash-table tr.row-fail td { background: #fff5f5; }
+table.dash-table tr.row-pass td { background: #f0faf4; }
+
+.dash-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.dash-pill.pass { background: #2d9d78; color: #fff; }
+.dash-pill.fail { background: #ff0000; color: #fff; }
+.dash-pill.error { background: #8e8e8e; color: #fff; }
+
+.dash-path a {
+  color: #1473e6;
+  text-decoration: none;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.dash-issues ul {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.dash-issues li {
+  margin-bottom: 2px;
+}
+
+.dash-empty {
+  padding: 40px;
+  text-align: center;
+  color: #6e6e6e;
+}

@@ -35,6 +35,11 @@
   ],
   "apps": [
     {
+      "title": "OneAZ Governance Dashboard",
+      "description": "Crawls DA content, validates every governed page against sitemap-registry.json and template-rules.json, and reports pass/fail site-wide.",
+      "url": "https://da.live/app/nishant-gupta/da-eds/tools/dashboard-app"
+    },
+    {
       "title": "App demo",
       "description": "This is a sample app using the DA SDK.",
       "url": "https://da.live/app/aemsites/da-block-collection/tools/demo-app"
