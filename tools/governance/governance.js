@@ -76,6 +76,11 @@ function rulesForTemplate(templateId, rulesRows) {
 // published/previewed render. This can lag unsaved edits; treat counts as
 // advisory, not authoritative (the validation bot, not this panel, is the
 // authoritative check — see architecture doc §6.1/§6.2).
+//
+// A plain fetch() gets the pre-decoration server HTML, not what's in the
+// browser DOM after scripts.js runs — the ".block" class isn't added until
+// client-side decoration executes, which a fetch+DOMParser never triggers.
+// Pre-decoration, a block div's only class IS the block name, so read that.
 async function fetchExistingBlockCounts(origin, path) {
   try {
     const res = await fetch(`${origin}${path}`);
@@ -83,8 +88,8 @@ async function fetchExistingBlockCounts(origin, path) {
     const html = await res.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const counts = {};
-    doc.querySelectorAll('main > div > div.block').forEach((block) => {
-      const name = [...block.classList].find((c) => c !== 'block');
+    doc.querySelectorAll('main > div > div[class]').forEach((block) => {
+      const name = block.classList[0];
       if (name) counts[name] = (counts[name] || 0) + 1;
     });
     return { counts, known: true };
