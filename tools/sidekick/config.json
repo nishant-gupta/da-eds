@@ -11,6 +11,13 @@
       "url": "https://main--da-block-collection--aemsites.hlx.live/tools/demo/demo.html"
     },
     {
+      "id": "oneaz-governance",
+      "title": "OneAZ Governance",
+      "environments": ["edit"],
+      "daLibrary": true,
+      "url": "https://main--da-eds--nishant-gupta.aem.live/tools/governance/governance.html"
+    },
+    {
       "id": "experimentation",
       "titleI18n": { "en": "Experimentation" },
       "environments": [ "dev", "preview" ],
