@@ -11,20 +11,126 @@
 // too expensive to repeat every second. It runs once on load and again on
 // demand via the Rescan button.
 //
-// DA "apps" (launched via da.live/app/{org}/{repo}/{path}) are served
-// through a preview.da.live proxy layer, not directly from aem.live like
-// library plugins are — confirmed by a real 404 when this used a relative
-// cross-folder import (../governance/rules.mjs): that path resolves fine
-// for the Governance library plugin (served directly from aem.live) but
-// not for this app. Importing the fully-qualified aem.live URL sidesteps
-// whatever that proxy's relative-path resolution is doing, since an
-// absolute https:// import always resolves against the URL itself.
+// DA "apps" (launched via da.live/app/{org}/{repo}/{path}) run entirely
+// from a preview.da.live sandbox origin, not from aem.live like library
+// plugins do. Two things were tried and both failed for a real, confirmed
+// reason, not a guess:
+//   1. A relative cross-folder import (../governance/rules.mjs) 404'd —
+//      the preview.da.live proxy doesn't mirror arbitrary sibling paths
+//      from the project's code bus.
+//   2. An absolute https://…aem.live/tools/governance/rules.mjs import
+//      hit a browser CORS block — plain EDS code-bus JS files aren't
+//      served with Access-Control-Allow-Origin (unlike da.live's own
+//      sdk.js, which is deliberately CORS-open for exactly this reason).
+// There is no reliable way for an app to import from the project's own
+// code bus. The validation logic below is therefore an inlined copy of
+// tools/governance/rules.mjs's normalizePath/sheetRows/resolveTemplate/
+// rulesForTemplate/extractBlocks/validatePage — keep the two in sync by
+// hand if the rules logic changes; blockToTableHtml isn't needed here
+// since this app only reads, it never inserts.
 // eslint-disable-next-line import/no-unresolved
 import DA_SDK from 'https://da.live/nx/utils/sdk.js';
-import {
-  normalizePath, sheetRows, resolveTemplate, rulesForTemplate, extractBlocks, validatePage,
-  // eslint-disable-next-line import/no-unresolved
-} from 'https://main--da-eds--nishant-gupta.aem.live/tools/governance/rules.mjs';
+
+function normalizePath(path) {
+  return (path || '/').replace(/\.html$/, '').replace(/\/$/, '') || '/';
+}
+
+function sheetRows(json) {
+  if (Array.isArray(json.data)) return json.data;
+  const sheetName = json[':names']?.[0];
+  return json[sheetName]?.data || [];
+}
+
+function resolveTemplate(path, registryRows) {
+  return registryRows.find((entry) => new RegExp(entry.pathPattern).test(path));
+}
+
+function templateLabel(templateId) {
+  return templateId.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function rulesForTemplate(templateId, rulesRows) {
+  const rows = rulesRows.filter((r) => r.template === templateId);
+  if (!rows.length) return null;
+  const toRule = (r) => ({
+    block: r.block,
+    position: r.position || undefined,
+    min: Number(r.min),
+    max: Number(r.max),
+  });
+  return {
+    label: templateLabel(templateId),
+    mandatory: rows.filter((r) => r.zone === 'mandatory').map(toRule),
+    flexible: rows.filter((r) => r.zone === 'flexible').map(toRule),
+  };
+}
+
+function sectionEls(doc) {
+  const main = doc.querySelector('main');
+  if (!main) return [];
+  return Array.from(main.children).filter((el) => el.tagName === 'DIV');
+}
+
+function tableBlockName(tableEl) {
+  const firstCell = tableEl.querySelector('tr td, tr th');
+  if (!firstCell) return null;
+  return firstCell.textContent.trim().split(/\s+/)[0]?.toLowerCase() || null;
+}
+
+function extractBlocks(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const blocks = [];
+  sectionEls(doc).forEach((section) => {
+    Array.from(section.children).forEach((child) => {
+      if (child.tagName === 'DIV' && child.classList.length > 0
+        && !child.classList.contains('section-metadata') && !child.classList.contains('metadata')) {
+        blocks.push(child.classList[0]);
+      } else if (child.tagName === 'TABLE') {
+        const name = tableBlockName(child);
+        if (name) blocks.push(name);
+      }
+    });
+  });
+  return blocks;
+}
+
+function validatePage(blocks, template) {
+  const counts = {};
+  blocks.forEach((b) => { counts[b] = (counts[b] || 0) + 1; });
+
+  const violations = [];
+
+  template.mandatory.forEach((rule) => {
+    const count = counts[rule.block] || 0;
+    if (count < rule.min) {
+      violations.push({ type: 'missing-mandatory', block: rule.block, expected: rule.min, actual: count });
+    } else if (count > rule.max) {
+      violations.push({ type: 'too-many', block: rule.block, max: rule.max, actual: count });
+    }
+    if (rule.position === 'first' && blocks[0] !== rule.block) {
+      violations.push({ type: 'wrong-position', block: rule.block, expected: 'first', actual: blocks[0] || null });
+    }
+    if (rule.position === 'last' && blocks[blocks.length - 1] !== rule.block) {
+      violations.push({ type: 'wrong-position', block: rule.block, expected: 'last', actual: blocks[blocks.length - 1] || null });
+    }
+  });
+
+  template.flexible.forEach((rule) => {
+    const count = counts[rule.block] || 0;
+    if (count < rule.min) {
+      violations.push({ type: 'too-few', block: rule.block, expected: rule.min, actual: count });
+    }
+    if (count > rule.max) {
+      violations.push({ type: 'too-many', block: rule.block, max: rule.max, actual: count });
+    }
+  });
+
+  const allowed = new Set([...template.mandatory, ...template.flexible].map((r) => r.block));
+  const disallowed = [...new Set(blocks.filter((b) => !allowed.has(b)))];
+  disallowed.forEach((block) => violations.push({ type: 'disallowed-block', block }));
+
+  return { violations, counts, disallowed };
+}
 
 const DA_ADMIN = 'https://admin.da.live';
 const MAX_PAGES = 1500; // safety cap on how many files the crawl will enumerate
