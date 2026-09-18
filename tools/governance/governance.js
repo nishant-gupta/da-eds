@@ -14,10 +14,19 @@
 //   - no Preview/Publish step needed before this panel reflects reality
 //   - a Content Strategist editing the rules sheet is reflected immediately,
 //     not after a code deploy or a publish click
-// The panel re-fetches source on tab focus/visibility change (see refresh()
-// below) rather than requiring a manual reload — mirroring the pattern
-// already proven in tools/plugins/personalization (a sibling DA plugin in
-// this org's other projects) rather than inventing a new one.
+// The panel polls DA source every POLL_MS and re-renders on change (see
+// refresh() below), plus an immediate refresh on tab focus/visibility change
+// for lower latency when attention returns to this panel. Polling is
+// necessary, not just belt-and-suspenders: this plugin's iframe is a
+// different window than da.live's main editing canvas, so focus/visibility
+// events on THIS iframe never fire just because the author is typing
+// elsewhere on the page — confirmed by observation (the panel kept showing a
+// stale block count while a second Hero block was being added in the
+// canvas, with this iframe never gaining focus). The tools/plugins/
+// personalization plugin (a sibling DA plugin in this org's other projects)
+// gets away with focus/visibility alone because its trigger is a deliberate
+// click *into* its own panel — this plugin's trigger is edits happening
+// somewhere the plugin has no visibility into except by asking again.
 //
 // This is still guidance, not enforcement: there is no SDK hook to intercept
 // or block a save in the main editor canvas (see architecture doc §6.1). An
@@ -31,6 +40,7 @@ import {
 } from './rules.mjs';
 
 const DA_ADMIN = 'https://admin.da.live';
+const POLL_MS = 2500;
 const EXAMPLES = ['hero', 'cards', 'accordion', 'quote', 'video']; // blocks with a bundled insert example
 
 const state = {
@@ -39,6 +49,7 @@ const state = {
   lastPageSource: null,
   lastRegistrySource: null,
   lastRulesSource: null,
+  hasRenderedOnce: false,
 };
 
 function daSourceUrl(daPath) {
@@ -166,9 +177,14 @@ function render(registryRows, rulesRows, pageHtml, path) {
 
 let refreshing = false;
 // Re-pull DA source (page + both rule sheets) and re-render only if something
-// changed. Wired to tab focus/visibility so the panel reflects edits made
-// since it last rendered, without the author ever clicking a refresh button
-// or this panel needing a reload.
+// changed. Called on a poll interval (primary trigger — see the note above
+// on why focus/visibility alone isn't enough) and immediately on tab
+// focus/visibility change (for lower latency when attention returns here).
+//
+// A transient fetch error keeps the current view intact rather than blanking
+// the panel — with a 2.5s poll, a single flaky request is normal, not a real
+// failure, and shouldn't be disruptive. Only the very first load shows an
+// error state, since there's no "current view" yet to fall back to.
 async function refresh() {
   if (refreshing || !state.sdk) return;
   refreshing = true;
@@ -198,8 +214,11 @@ async function refresh() {
       pageSource,
       path,
     );
+    state.hasRenderedOnce = true;
   } catch (err) {
-    state.app.innerHTML = renderError(err.message);
+    if (!state.hasRenderedOnce) state.app.innerHTML = renderError(err.message);
+    // eslint-disable-next-line no-console
+    else console.error('OneAZ governance refresh failed (keeping current view):', err);
   } finally {
     refreshing = false;
   }
@@ -212,6 +231,7 @@ async function refresh() {
 
   await refresh();
 
+  setInterval(refresh, POLL_MS);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') refresh();
   });
