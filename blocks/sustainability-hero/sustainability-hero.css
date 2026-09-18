@@ -1,0 +1,65 @@
+.sustainability-hero {
+  position: relative;
+  width: 100%;
+  height: 90vh;
+  overflow: hidden;
+  background-color: #f5f5f5;
+}
+
+.sustainability-hero > div {
+  height: 100%;
+  position: relative;
+}
+
+.sustainability-hero picture {
+  display: block;
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.sustainability-hero picture::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 100%);
+  pointer-events: none;
+}
+
+.sustainability-hero img {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}
+
+.sustainability-hero .content-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  z-index: 1;
+}
+
+.sustainability-hero h1 {
+  color: #000;
+  font-size: 48px;
+  margin: 0;
+  font-weight: bold;
+  max-width: 80%;
+}
+
+.sustainability-hero .arrow {
+  width: 24px;
+  height: 24px;
+  border: solid #000;
+  border-width: 0 2px 2px 0;
+  transform: rotate(-45deg);
+  margin-bottom: 12px;
+}

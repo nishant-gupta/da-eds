@@ -1,0 +1,56 @@
+{
+  "definitions": [
+    {
+      "title": "Sustainability Content",
+      "id": "sustainability-content",
+      "plugins": {
+        "da": {
+          "unsafeHTML": "<div class=\"sustainability-content hero content-bottom image-link\"><div><div data-valign=\"middle\"><picture><source type=\"image/webp\" srcset=\"\" media=\"(min-width: 600px)\"><source type=\"image/webp\" srcset=\"\"><source type=\"image/png\" srcset=\"\" media=\"(min-width: 600px)\"><img loading=\"lazy\" alt=\"\" width=\"1328\" height=\"600\"></picture></div><div data-valign=\"middle\"><h3 id=\"repurposed-gems\"><a href=\"/en/repurposed-gems\">Repurposed gems</a></h3><p></p></div></div></div>"
+        }
+      }
+    }
+  ],
+  "models": [
+    {
+      "id": "sustainability-content",
+      "fields": [
+        {
+          "component": "reference",
+          "valueType": "string",
+          "name": "div:nth-child(1)>div:nth-child(1)>picture:nth-child(1)>img:nth-child(4)[src]",
+          "label": "Image",
+          "multi": false
+        },
+        {
+          "component": "text",
+          "valueType": "string",
+          "name": "div:nth-child(1)>div:nth-child(1)>picture:nth-child(1)>img:nth-child(4)[alt]",
+          "label": "Image Alt",
+          "value": ""
+        },
+        {
+          "component": "text",
+          "name": "div:nth-child(1)>div:nth-child(2)>h3:nth-child(1)>a:nth-child(1)",
+          "value": "Repurposed gems",
+          "label": "Title",
+          "valueType": "string"
+        },
+        {
+          "component": "text",
+          "name": "div:nth-child(1)>div:nth-child(2)>h3:nth-child(1)>a:nth-child(1)[href]",
+          "value": "/en/repurposed-gems",
+          "label": "Link URL",
+          "valueType": "string"
+        },
+        {
+          "component": "text",
+          "name": "div:nth-child(1)>div:nth-child(2)>p:nth-child(2)",
+          "value": "For the latest of H&M Innovation Stories, our design team trains their focus on more sustainably-sourced embellishments.",
+          "label": "Description",
+          "valueType": "string"
+        }
+      ]
+    }
+  ],
+  "filters": []
+}

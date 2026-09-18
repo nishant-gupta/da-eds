@@ -1,0 +1,89 @@
+.my-hero-container .my-hero-wrapper {
+  max-width: 1200px;
+  padding: 0;
+  margin: 0 auto;
+}
+
+.my-hero {
+  position: relative;
+  padding: 0;
+  min-height: 500px;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.my-hero > div {
+  width: 100%;
+}
+
+.my-hero-content {
+  background-color: #fff;
+  color: #333;
+  padding: 20px;
+  width: fit-content;
+  max-width: 500px;
+  margin: 0 0 40px 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.my-hero h1 {
+  margin: 0 0 10px 0;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #333;
+}
+
+.my-hero .subtitle {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.my-hero .arrow-link {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #333;
+  text-decoration: none;
+}
+
+.my-hero .arrow-link::after {
+  content: "→";
+  font-size: 20px;
+}
+
+.my-hero picture {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.my-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (min-width: 768px) {
+  .my-hero {
+    min-height: 600px;
+  }
+
+  .my-hero-content {
+    padding: 30px;
+    margin: 0 0 60px 40px;
+  }
+
+  .my-hero h1 {
+    font-size: 36px;
+  }
+} 

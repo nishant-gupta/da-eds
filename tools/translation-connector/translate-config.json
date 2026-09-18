@@ -1,0 +1,68 @@
+{
+  "config": {
+    "total": 6,
+    "limit": 6,
+    "offset": 0,
+    "data": [
+      {
+        "key": "translation.service.name",
+        "value": "Lorem",
+        "description": "Loads nx/blocks/loc/connectors/lorem/index.js from da-nx"
+      },
+      {
+        "key": "translation.service.all.env",
+        "value": "prod"
+      },
+      {
+        "key": "translation.service.prod.origin",
+        "value": "local",
+        "description": "Unused. This connector generates lorem ipsum locally."
+      },
+      {
+        "key": "translation.service.prod.link",
+        "value": "https://www.aem.live/docs/ew/administering/translation-service-connection"
+      },
+      {
+        "key": "sync.conflict.behavior",
+        "value": "overwrite, merge"
+      },
+      {
+        "key": "translate.conflict.behavior",
+        "value": "overwrite, merge"
+      },
+      {
+        "key": "copy.conflict.behavior",
+        "value": "overwrite, merge"
+      },
+      {
+        "key": "rollout.conflict.behavior",
+        "value": "overwrite, merge"
+      }
+    ]
+  },
+  "languages": {
+    "data": [
+      {
+        "name": "English",
+        "code": "en",
+        "location": "/",
+        "actions": "Skip, Translate"
+      },
+      {
+        "name": "German",
+        "code": "de",
+        "location": "/de",
+        "actions": "Skip, Translate"
+      },
+      {
+        "name": "French",
+        "code": "fr",
+        "location": "/fr",
+        "actions": "Skip, Translate"
+      }
+    ]
+  },
+  ":names": ["config", "languages"],
+  ":version": 3,
+  ":type": "multi-sheet"
+}
