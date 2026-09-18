@@ -28,14 +28,20 @@ function normalizePath(path) {
   return (path || '/').replace(/\.html$/, '').replace(/\/$/, '') || '/';
 }
 
-// DA sheets are served as a multi-sheet envelope:
-// { <sheetName>: { total, offset, limit, data: [ {col: val, ...}, ... ] }, :names: [...], :type: "multi-sheet" }
-// Every cell value is a flat primitive (string) — nested objects aren't valid sheet cells.
+// DA source docs are authored as a multi-sheet envelope, but the EDS render
+// pipeline (aem.page/aem.live) collapses a single-sheet doc down to the flat
+// shape at delivery: { total, offset, limit, data: [ {col: val, ...}, ... ],
+// ":type": "sheet" } — no ":names" wrapper survives. Handle both shapes:
+// the flat one (what these two configs actually serve as), and the
+// multi-sheet one defensively, in case one of these ever grows a second
+// named sheet. Every cell value is a flat primitive (string) — nested
+// objects aren't valid sheet cells (see architecture doc §4).
 async function loadSheet(origin, name) {
   const res = await fetch(`${origin}/${name}`);
   if (!res.ok) throw new Error(`${name} not found (${res.status})`);
   const json = await res.json();
-  const sheetName = json[':names']?.[0] || 'data';
+  if (Array.isArray(json.data)) return json.data;
+  const sheetName = json[':names']?.[0];
   return json[sheetName]?.data || [];
 }
 
