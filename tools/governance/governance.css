@@ -48,6 +48,7 @@ body {
 
 .gov-status.ok { background: #2d9d78; }
 .gov-status.missing { background: #ff0000; }
+.gov-status.too-many { background: #e68619; }
 .gov-status.unknown { background: #cbcbcb; }
 
 .gov-picker {

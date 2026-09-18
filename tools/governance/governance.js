@@ -75,12 +75,14 @@ async function insertBlock(name) {
   state.sdk.actions.sendHTML(html);
 }
 
-function statusDot(current, min) {
-  return current >= min ? 'ok' : 'missing';
+function statusDot(current, min, max) {
+  if (current < min) return 'missing';
+  if (current > max) return 'too-many';
+  return 'ok';
 }
 
 function renderRule(rule, count) {
-  const dot = statusDot(count, rule.min);
+  const dot = statusDot(count, rule.min, rule.max);
   const range = rule.max === rule.min ? `${rule.min}` : `${rule.min}–${rule.max}`;
   return `
     <li>
@@ -93,7 +95,8 @@ function renderPickerButton(rule, count) {
   const hasExample = EXAMPLES.includes(rule.block);
   const atMax = count >= rule.max;
   const disabled = !hasExample || atMax;
-  const reason = !hasExample ? 'example pending' : atMax ? 'max reached' : `${count}/${rule.max}`;
+  const reason = !hasExample ? 'example pending'
+    : count > rule.max ? 'over max' : atMax ? 'max reached' : `${count}/${rule.max}`;
   return `
     <button type="button" data-block="${rule.block}" ${disabled ? 'disabled' : ''}>
       ${rule.block}
