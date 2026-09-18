@@ -11,11 +11,20 @@
 // too expensive to repeat every second. It runs once on load and again on
 // demand via the Rescan button.
 //
+// DA "apps" (launched via da.live/app/{org}/{repo}/{path}) are served
+// through a preview.da.live proxy layer, not directly from aem.live like
+// library plugins are — confirmed by a real 404 when this used a relative
+// cross-folder import (../governance/rules.mjs): that path resolves fine
+// for the Governance library plugin (served directly from aem.live) but
+// not for this app. Importing the fully-qualified aem.live URL sidesteps
+// whatever that proxy's relative-path resolution is doing, since an
+// absolute https:// import always resolves against the URL itself.
 // eslint-disable-next-line import/no-unresolved
 import DA_SDK from 'https://da.live/nx/utils/sdk.js';
 import {
   normalizePath, sheetRows, resolveTemplate, rulesForTemplate, extractBlocks, validatePage,
-} from '../governance/rules.mjs';
+  // eslint-disable-next-line import/no-unresolved
+} from 'https://main--da-eds--nishant-gupta.aem.live/tools/governance/rules.mjs';
 
 const DA_ADMIN = 'https://admin.da.live';
 const MAX_PAGES = 1500; // safety cap on how many files the crawl will enumerate
