@@ -41,7 +41,6 @@ import {
 
 const DA_ADMIN = 'https://admin.da.live';
 const POLL_MS = 1000;
-const EXAMPLES = ['hero', 'cards', 'accordion', 'quote', 'video']; // blocks with a bundled insert example
 
 const state = {
   sdk: null, // { context, token, actions }
@@ -49,6 +48,7 @@ const state = {
   lastPageSource: null,
   lastRegistrySource: null,
   lastRulesSource: null,
+  lastLibrarySource: null,
   hasRenderedOnce: false,
 };
 
@@ -68,11 +68,28 @@ async function fetchSource(daPath) {
   return res.text();
 }
 
+// library/blocks.json is this project's real block library manifest (see
+// content/library/blocks.json — cleaned up to only the blocks that actually
+// exist in blocks/*, each entry's path pointing at a corresponding real
+// example under content/library/blocks/*.html). The picker's "does this
+// block have an example" question is answered from this, live, instead of
+// a hardcoded list — so adding a block to the library here makes it
+// insertable from the governance picker with no code change.
+function libraryBlockName(row) {
+  return (row.path || '').split('/').pop();
+}
+
 async function insertBlock(name) {
-  const res = await fetch(`/tools/governance/examples/${name}.html`);
-  if (!res.ok) return;
-  const html = await res.text();
-  state.sdk.actions.sendHTML(html);
+  try {
+    const html = await fetchSource(`/library/blocks/${name}.html`);
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const blockEl = doc.querySelector(`main .${name}`);
+    if (!blockEl) throw new Error(`no .${name} element found in its library example`);
+    state.sdk.actions.sendHTML(blockEl.outerHTML);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(`OneAZ governance: could not insert "${name}" from the library`, err);
+  }
 }
 
 function statusDot(current, min, max) {
@@ -91,8 +108,8 @@ function renderRule(rule, count) {
     </li>`;
 }
 
-function renderPickerButton(rule, count) {
-  const hasExample = EXAMPLES.includes(rule.block);
+function renderPickerButton(rule, count, availableBlocks) {
+  const hasExample = availableBlocks.has(rule.block);
   const atMax = count >= rule.max;
   const disabled = !hasExample || atMax;
   const reason = !hasExample ? 'example pending'
@@ -130,7 +147,7 @@ function renderError(message) {
 }
 
 // Rebuild the whole panel from currently-loaded source strings.
-function render(registryRows, rulesRows, pageHtml, path) {
+function render(registryRows, rulesRows, pageHtml, path, availableBlocks) {
   const entry = resolveTemplate(path, registryRows);
   if (!entry) {
     state.app.innerHTML = renderUngoverned(path);
@@ -169,7 +186,7 @@ function render(registryRows, rulesRows, pageHtml, path) {
     <div class="gov-section">
       <h4>Insert an approved block</h4>
       <div class="gov-picker">
-        ${allRules.map((r) => renderPickerButton(r, counts[r.block] || 0)).join('')}
+        ${allRules.map((r) => renderPickerButton(r, counts[r.block] || 0, availableBlocks)).join('')}
       </div>
     </div>`;
 
@@ -193,16 +210,18 @@ async function refresh() {
   refreshing = true;
   try {
     const path = normalizePath(state.sdk.context.path);
-    const [registrySource, rulesSource, pageSource] = await Promise.all([
+    const [registrySource, rulesSource, pageSource, librarySource] = await Promise.all([
       fetchSource('/sitemap-registry.json'),
       fetchSource('/template-rules.json'),
       fetchSource(`${path}.html`),
+      fetchSource('/library/blocks.json'),
     ]);
 
     if (
       registrySource === state.lastRegistrySource
       && rulesSource === state.lastRulesSource
       && pageSource === state.lastPageSource
+      && librarySource === state.lastLibrarySource
     ) {
       return; // nothing changed since the last render
     }
@@ -210,12 +229,16 @@ async function refresh() {
     state.lastRegistrySource = registrySource;
     state.lastRulesSource = rulesSource;
     state.lastPageSource = pageSource;
+    state.lastLibrarySource = librarySource;
+
+    const availableBlocks = new Set(sheetRows(JSON.parse(librarySource)).map(libraryBlockName));
 
     render(
       sheetRows(JSON.parse(registrySource)),
       sheetRows(JSON.parse(rulesSource)),
       pageSource,
       path,
+      availableBlocks,
     );
     state.hasRenderedOnce = true;
   } catch (err) {
