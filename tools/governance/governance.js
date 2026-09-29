@@ -138,6 +138,11 @@ function renderDisallowed(disallowed) {
 
 function renderUngoverned(path) {
   return `
+    <div class="gov-summary warning">
+      <h2>Page is outside OneAZ governance</h2>
+      <p>No OneAZ template rules were applied.</p>
+      <p class="gov-summary-path">${path}</p>
+    </div>
     <div class="gov-empty">
       <strong>${path}</strong> isn't in the OneAZ sitemap registry yet.<br>
       No template rules apply — use the standard Block Library, and flag this
@@ -148,6 +153,20 @@ function renderUngoverned(path) {
 
 function renderError(message) {
   return `<div class="gov-error">Governance rules unavailable: ${message}</div>`;
+}
+
+function renderSummary(path, template, violations) {
+  const passed = violations.length === 0;
+  const title = passed ? 'Governance check passed' : 'Governance check failed';
+  const detail = passed
+    ? `${template.label} has no structural rule violations.`
+    : `${template.label} has ${violations.length} structural rule violation${violations.length === 1 ? '' : 's'}.`;
+  return `
+    <div class="gov-summary ${passed ? 'pass' : 'fail'}">
+      <h2>${title}</h2>
+      <p>${detail}</p>
+      <p class="gov-summary-path">${path}</p>
+    </div>`;
 }
 
 // Rebuild the whole panel from currently-loaded source strings.
@@ -165,10 +184,11 @@ function render(registryRows, rulesRows, pageHtml, path, availableBlocks) {
   }
 
   const blocks = extractBlocks(pageHtml);
-  const { counts, disallowed } = validatePage(blocks, template);
+  const { counts, disallowed, violations } = validatePage(blocks, template);
   const allRules = [...template.mandatory, ...template.flexible];
 
   state.app.innerHTML = `
+    ${renderSummary(path, template, violations)}
     <p class="gov-template-name">${template.label}</p>
 
     <div class="gov-section">

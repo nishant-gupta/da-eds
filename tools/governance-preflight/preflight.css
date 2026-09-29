@@ -23,6 +23,14 @@ body {
   font-size: 18px;
 }
 
+.result h2 {
+  margin: 16px 0 6px;
+  font-size: 13px;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  color: #6e6e6e;
+}
+
 .result p {
   margin: 0 0 8px;
   line-height: 1.5;
@@ -53,6 +61,44 @@ body {
 .result li {
   margin: 6px 0;
   line-height: 1.45;
+}
+
+.rule-list,
+.violation-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rule-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rule-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+}
+
+.rule-pass .rule-indicator {
+  background: #268e6c;
+}
+
+.rule-fail .rule-indicator {
+  background: #d7373f;
+}
+
+.violation-list {
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.disallowed {
+  font-weight: 600;
 }
 
 .page-path {

@@ -15,7 +15,7 @@ Use the actual deployed branch/host and configure this in the DA site being auth
 ## Behavior and limits
 
 - Reads the current page, `content/sitemap-registry.json`, and `content/template-rules.json` through the DA Source API with the DA SDK token. No preview or publish is required.
-- Reports rule violations as errors for this check, an unregistered page as a warning, and missing or malformed source/config as an unable-to-run error.
+- Shows the page path, template result, mandatory and flexible rule counts, and any violations. Rule violations are errors for this check; an unregistered page is a warning; missing or malformed source/config is an unable-to-run error.
 - Validates the source currently available from DA. This is an on-demand report only; it does not inspect unsaved edits and cannot prevent editing, saving, or publishing.
 
 ## Local checks

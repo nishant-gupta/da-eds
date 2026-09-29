@@ -93,11 +93,17 @@ export function evaluatePreflight(path, registryRows, rulesRows, blocks) {
     throw new Error(`No template rules are configured for "${entry.template}"`);
   }
 
-  const { violations } = validatePage(blocks, template);
+  const {
+    violations, counts, disallowed,
+  } = validatePage(blocks, template);
   return {
     status: violations.length ? 'failed' : 'passed',
     path: normalizedPath,
     template: template.label,
+    mandatory: template.mandatory,
+    flexible: template.flexible,
+    counts,
+    disallowed,
     violations,
   };
 }

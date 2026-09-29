@@ -46,6 +46,10 @@ test('passes a compliant page using the shared template rules', () => {
   );
   assert.equal(result.status, 'passed');
   assert.equal(result.template, 'Product Landing');
+  assert.deepEqual(result.counts, { hero: 1, accordion: 1, form: 1 });
+  assert.equal(result.mandatory.length, 2);
+  assert.equal(result.flexible.length, 2);
+  assert.deepEqual(result.disallowed, []);
 });
 
 test('reports every existing structural violation as a failure', () => {
@@ -74,8 +78,15 @@ test('warns when the current path is not registered', () => {
 
 test('fails explicitly when the matched template has no rules', () => {
   assert.throws(
-    () => evaluatePreflight('/en/products/example', registryRows, [], []),
-    /Template rules do not contain any data rows|No template rules/,
+    () => evaluatePreflight(
+      '/en/products/example',
+      registryRows,
+      [{
+        template: 'another-template', zone: 'mandatory', block: 'hero', min: '1', max: '1',
+      }],
+      [],
+    ),
+    /No template rules are configured/,
   );
 });
 

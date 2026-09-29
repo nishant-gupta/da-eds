@@ -14,6 +14,49 @@ body {
   color: #6e6e6e;
 }
 
+.gov-summary {
+  margin-bottom: 16px;
+  padding: 16px;
+  border-left: 4px solid;
+  border-radius: 4px;
+}
+
+.gov-summary h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.gov-summary p {
+  margin: 0 0 8px;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.gov-summary p:last-child {
+  margin-bottom: 0;
+}
+
+.gov-summary.pass {
+  border-color: #268e6c;
+  background: #f1faf6;
+}
+
+.gov-summary.fail {
+  border-color: #d7373f;
+  background: #fff5f5;
+}
+
+.gov-summary.warning,
+.gov-summary.pending {
+  border-color: #e68619;
+  background: #fff9ef;
+}
+
+.gov-summary-path {
+  color: #6e6e6e;
+  overflow-wrap: anywhere;
+}
+
 .gov-template-name {
   font-size: 15px;
   font-weight: 700;

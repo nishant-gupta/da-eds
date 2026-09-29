@@ -59,6 +59,35 @@ function describeViolation(violation) {
   }
 }
 
+function renderRuleSection(title, rules, counts, violations) {
+  const section = document.createElement('section');
+  section.className = 'rule-section';
+  const heading = document.createElement('h2');
+  heading.textContent = title;
+  const list = document.createElement('ul');
+  list.className = 'rule-list';
+
+  rules.forEach((rule) => {
+    const count = counts[rule.block] || 0;
+    const passed = count >= rule.min && count <= rule.max
+      && !violations.some((violation) => violation.block === rule.block);
+    const item = document.createElement('li');
+    item.className = passed ? 'rule-pass' : 'rule-fail';
+    const indicator = document.createElement('span');
+    indicator.className = 'rule-indicator';
+    indicator.setAttribute('aria-label', passed ? 'Pass' : 'Needs attention');
+    const detail = document.createElement('span');
+    const range = rule.min === rule.max ? `${rule.min}` : `${rule.min}–${rule.max}`;
+    const position = rule.position ? `, ${rule.position}` : '';
+    detail.textContent = `${rule.block} (needs ${range}${position}) — ${count} on page`;
+    item.append(indicator, detail);
+    list.append(item);
+  });
+
+  section.append(heading, list);
+  return section;
+}
+
 function showReport(result) {
   app.replaceChildren();
   const section = document.createElement('section');
@@ -81,13 +110,34 @@ function showReport(result) {
     section.className = 'result fail';
     heading.textContent = 'Governance check failed';
     detail.textContent = `${result.template} has ${result.violations.length} structural violation${result.violations.length === 1 ? '' : 's'}. These are errors for this check only; they do not block saving or publishing.`;
+    section.append(
+      renderRuleSection('Mandatory', result.mandatory, result.counts, result.violations),
+      renderRuleSection('Flexible zones', result.flexible, result.counts, result.violations),
+    );
     const list = document.createElement('ul');
+    list.className = 'violation-list';
     result.violations.forEach((violation) => {
       const item = document.createElement('li');
       item.textContent = describeViolation(violation);
       list.append(item);
     });
+    const issuesHeading = document.createElement('h2');
+    issuesHeading.textContent = 'Issues to resolve';
+    section.append(issuesHeading);
+    if (result.disallowed.length) {
+      const disallowed = document.createElement('p');
+      disallowed.className = 'disallowed';
+      disallowed.textContent = `Not approved for this template: ${result.disallowed.join(', ')}.`;
+      section.append(disallowed);
+    }
     section.append(list);
+  }
+
+  if (result.status === 'passed') {
+    section.append(
+      renderRuleSection('Mandatory', result.mandatory, result.counts, result.violations),
+      renderRuleSection('Flexible zones', result.flexible, result.counts, result.violations),
+    );
   }
 
   app.replaceChildren(section, runButton);
