@@ -1,0 +1,81 @@
+body {
+  margin: 0;
+  padding: 20px;
+  color: #1b1b1b;
+  font-family: 'Adobe Clean', adobe-clean, sans-serif;
+  font-size: 14px;
+}
+
+#app {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.result {
+  padding: 16px;
+  border-left: 4px solid;
+  border-radius: 4px;
+  background: #f7f7f7;
+}
+
+.result h1 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.result p {
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+
+.result.pass {
+  border-color: #268e6c;
+  background: #f1faf6;
+}
+
+.result.fail,
+.result.error {
+  border-color: #d7373f;
+  background: #fff5f5;
+}
+
+.result.warning,
+.result.pending {
+  border-color: #e68619;
+  background: #fff9ef;
+}
+
+.result ul {
+  margin: 12px 0 0;
+  padding-left: 22px;
+}
+
+.result li {
+  margin: 6px 0;
+  line-height: 1.45;
+}
+
+.page-path {
+  color: #6e6e6e;
+  overflow-wrap: anywhere;
+}
+
+.run-check {
+  margin-top: 14px;
+  padding: 8px 12px;
+  border: 1px solid #1473e6;
+  border-radius: 4px;
+  background: #fff;
+  color: #1473e6;
+  font: inherit;
+  cursor: pointer;
+}
+
+.run-check:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.run-check:hover:not(:disabled) {
+  background: #f2f8ff;
+}
