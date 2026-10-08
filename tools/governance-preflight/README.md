@@ -20,4 +20,6 @@ Use the actual deployed branch/host and configure this in the DA site being auth
 
 ## Local checks
 
+Run `npm run build:governance` after changing either browser entry point or the shared governance rules, and commit the generated bundles with the source changes. This bundles local modules into same-origin JavaScript files while leaving the DA SDK import external; those generated bundles are the files loaded by the browser.
+
 Run `npm run test:governance-preflight` to test result classification, shared-rule parity, and malformed configuration without calling a live DA service.
